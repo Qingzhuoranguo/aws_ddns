@@ -58,7 +58,9 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 
 
 		logging.info ("Generates the change request json")
+		
 		# The final request json file
+		change_target_count = 0 
 		out_jason = {
 			"Comment": "",
 			"Changes": []
@@ -87,6 +89,12 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 					out_jason["Changes"].append( change_request )
 
 					logging.debug (f"after appending, out_jason is: {out_jason}")
+
+		logging.debug ( f"Target record counts: {change_target_count}")
+		# if no target found in the search hostzone, treat as miss configuration
+		if (change_target_count == 0):
+			logging.critical (f"No target ip (old): {old_ip} found in the given Hostzones. Exit.")
+			exit()
 
 		logging.info (f"Generate final request json file for hostzone {host_zone_id}")
 		with open ( path + "temps/" + host_zone_id + '_change_req.json', 'w') as json_file:
@@ -207,7 +215,8 @@ while True:
 	if ( ip != current_ip ):
 		logging.info (f"IP change detected, current_ip: {current_ip}, new retrieved ip: {ip}.")
 
-		generate_update_req ( host_zone_ids, current_ip, ip);
+		flag = generate_update_req ( host_zone_ids, current_ip, ip);
+
 		logging.info ("Scan for all hostzones completed. Initiate change requests")
 		send_request ( host_zone_ids );
 		logging.info ("Requests for all hostzones completed. Now update config file")
