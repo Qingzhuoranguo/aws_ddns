@@ -79,6 +79,7 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 				logging.debug ( f"{record}" )
 				if ( record["Value"] == old_ip ):
 					logging.debug (f"found match with {record} and target ip (old ip) {old_ip}")
+					change_target_count += 1
 
 					logging.info ("Append changing elements to final changing request")
 					record["Value"] = new_ip
