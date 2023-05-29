@@ -138,16 +138,16 @@ force_create_dir ('temps')
 
 logging.basicConfig ( 
 	handlers=[
-		RotatingFileHandler(path+"logs/test.log", maxBytes=100000, backupCount=10),
+		RotatingFileHandler(path+"logs/test.log", maxBytes=100000, backupCount=2),
 		logging.StreamHandler()
 	],
 	format='%(asctime)s [%(levelname)s]:\t%(message)s', 
 	datefmt='%H:%M:%S %d-%b-%y', 
-	level=logging.DEBUG
+	level=logging.INFO
 )
 
 
-
+logging.info ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
 logging.info("Initialize...")
 logging.info("Load config files")
 
@@ -179,7 +179,7 @@ for ids in host_zone_ids:
 logging.info ( "All hostzone test passed. ")
 os.system ("rm " + path + "test_hostzone.temp")
 logging.info("removed test temp file")
-
+logging.info ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
 
 
 while True:
