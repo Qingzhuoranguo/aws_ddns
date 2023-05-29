@@ -28,7 +28,7 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 	
 	# Search each hostzone for ip's that matches
 	for host_zone_id in host_zone_ids:
-		logging.debug (f"Scanning hostzone {host_zone_id}")
+		logging.info (f"Scanning hostzone {host_zone_id}")
 		
 		get_tries = 0;
 		while get_tries < 4:
@@ -54,10 +54,10 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 		logging.debug (f"GOT record sets: {data}")
 
 		os.system ("rm " + temp_file_location)
-		logging.info("Removed temp GET file")
+		logging.debug("Removed temp GET file")
 
 
-		logging.info ("Generates the change request json")
+		logging.debug ("Generates the change request json")
 		
 		# The final request json file
 		change_target_count = 0 
@@ -81,7 +81,7 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 					logging.debug (f"found match with {record} and target ip (old ip) {old_ip}")
 					change_target_count += 1
 
-					logging.info ("Append changing elements to final changing request")
+					logging.debug ("Append changing elements to final changing request")
 					record["Value"] = new_ip
 					change_request = {
 						"Action": "UPSERT"
@@ -92,10 +92,10 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 					logging.debug (f"after appending, out_jason is: {out_jason}")
 
 		logging.debug ( f"Target record counts: {change_target_count}")
-		# if no target found in the search hostzone, treat as miss configuration
+		# if no target found in the search hostzone, treat as miss configuration, record critical, but pass
 		if (change_target_count == 0):
-			logging.critical (f"No target ip (old): {old_ip} found in the given Hostzones. Exit.")
-			exit()
+			logging.critical (f"No target ip (old): {old_ip} found in the given Hostzone {host_zone_id}.")
+			continue
 
 		logging.info (f"Generate final request json file for hostzone {host_zone_id}")
 		with open ( path + "temps/" + host_zone_id + '_change_req.json', 'w') as json_file:
@@ -107,7 +107,13 @@ def generate_update_req ( host_zone_ids, old_ip, new_ip ):
 def send_request ( host_zone_ids ):
 	logging.info (f"Start to send aws request")
 	for host_zone_id in host_zone_ids:
-		logging.debug (f"Requesting for hostzone {host_zone_id}")
+
+		# if the case where in generate_update_req() => no old ip found in the hostzone, pass the case 
+		if (  os.path.exists( path + "temps/" + host_zone_id +"_change_req.json" ) == False  ):
+			logging.critical (f"No target hostzone {host_zone_id} change file is found, skip.")
+			continue
+
+		logging.info (f"Requesting for hostzone {host_zone_id}")
 
 		get_tries = 0;
 		while get_tries < 4:
@@ -128,7 +134,7 @@ def send_request ( host_zone_ids ):
 		# check status ID until its INSYNC
 
 		os.system ("rm " + path + "temps/" + host_zone_id + '_change_req.json')
-		logging.info("Removed temp change_req file")
+		logging.debug("Removed temp change_req file")
 
 
 
@@ -138,7 +144,7 @@ force_create_dir ('temps')
 
 logging.basicConfig ( 
 	handlers=[
-		RotatingFileHandler(path+"logs/test.log", maxBytes=100000, backupCount=2),
+		RotatingFileHandler(path+"logs/ddns.log", maxBytes=100000, backupCount=2),
 		logging.StreamHandler()
 	],
 	format='%(asctime)s [%(levelname)s]:\t%(message)s', 
@@ -147,9 +153,9 @@ logging.basicConfig (
 )
 
 
-logging.info ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
-logging.info("Initialize...")
-logging.info("Load config files")
+logging.debug ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
+logging.info ("Initialize...")
+logging.debug ("Load config files")
 
 
 # Read configuration file
@@ -173,18 +179,19 @@ for ids in host_zone_ids:
 	if ( exit_code != 0 ):
 		logging.critical ( f"Hostzone {ids} test failed: Cannot retrieve data from server")
 		os.system ("rm " + path + "test_hostzone.temp")
-		logging.info("removed test temp file")
+		logging.debug("removed test temp file")
 		exit()
-	logging.info ( f"Hostzone {ids} test proceeds ok")
-logging.info ( "All hostzone test passed. ")
+	logging.debug ( f"Hostzone {ids} test proceeds ok")
+logging.debug ( "All hostzone test passed. ")
 os.system ("rm " + path + "test_hostzone.temp")
-logging.info("removed test temp file")
-logging.info ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
+logging.debug("removed test temp file")
+logging.info ("Initialize completed")
+logging.debug ("=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=x=")
 
 
+logging.info ("DDNS iteration service starts...")
 while True:
-	logging.info ("===============================================================")
-	logging.info ("DDNS iteration service starts...")
+	logging.debug ("===============================================================")
 	ip = '0.0.0.0'
 	ip_get_res_code = 404;
 	ip_tries = 0;
@@ -210,20 +217,21 @@ while True:
 		exit();
 
 	# if success
-	logging.info (f"Retrived ip: {ip}")
+	logging.debug (f"Retrived ip: {ip}")
 
 	# Check if there is IP change
 	if ( ip != current_ip ):
+		logging.info ("===============================================================")
 		logging.info (f"IP change detected, current_ip: {current_ip}, new retrieved ip: {ip}.")
 
 		flag = generate_update_req ( host_zone_ids, current_ip, ip);
-
 		logging.info ("Scan for all hostzones completed. Initiate change requests")
+
 		send_request ( host_zone_ids );
 		logging.info ("Requests for all hostzones completed. Now update config file")
+		
+		
 		current_ip = ip;
-
-
 		# Update configuration file
 		f = open (path + "ddns_aws.config")
 		configs = json.load(f);
@@ -231,9 +239,8 @@ while True:
 		f.close();
 		with open (path + "ddns_aws.config", 'w') as json_file:
 			json.dump (configs, json_file)
+		logging.info (f"Completed! Now wait for the next check in {interval} min")
 
-
-	logging.info (f"Completed! Now wait for the next check in {interval} min")
 	time.sleep( interval*60 )
 
 
