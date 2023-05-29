@@ -14,6 +14,9 @@ If the current machines' public IP changes, the program will do a scan on all pr
 ## Usage
 1. Setup aws-cli first
 2. Modify the configuration file with hostzone id, current ip (if known) and the time interval
+3. Run setup.sh
+
+
 ## Key features
 1. Hiccup handler. Allows temporary internet hiccups and retry query/request/sacn/etc. actions in a growing interval ( some actions up to 1 Day ) before exist.
 2. Search all hostzones' record sets and change all matching old IPs
