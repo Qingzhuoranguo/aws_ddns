@@ -19,7 +19,7 @@ target_dir+=/ddns
 mkdir -p $target_dir
 
 
-pip3 install pyinstaller
+pip3 install pyinstaller requests chardet
 pyinstaller --onefile ddns_aws.py
 
 
