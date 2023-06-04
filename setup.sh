@@ -18,7 +18,7 @@ target_dir+=/ddns
 
 mkdir -p $target_dir
 
-apt install python3 python3-pip
+apt install python3 python3-pip -y
 pip3 install pyinstaller requests chardet
 pyinstaller --onefile ddns_aws.py
 
